@@ -100,9 +100,8 @@ def _build_sam(
     )
     sam.eval()
     if checkpoint is not None:
-        attempt_download_asset(checkpoint)
-        with open(checkpoint, 'rb') as f:
-            state_dict = torch.load(f)
+        with open(checkpoint, "rb") as f:
+            state_dict = torch.load(f, "cpu")
         sam.load_state_dict(state_dict)
     return sam
 

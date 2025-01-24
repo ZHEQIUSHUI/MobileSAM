@@ -25,7 +25,7 @@ def parse_args():
     return parser.parse_args()
 def create_model():
     Prompt_guided_path='./PromptGuidedDecoder/Prompt_guided_Mask_Decoder.pt'
-    obj_model_path='./weight/ObjectAwareModel.pt'
+    obj_model_path='../weight/ObjectAwareModel.pt'
     ObjAwareModel = ObjectAwareModel(obj_model_path)
     PromptGuidedDecoder=sam_model_registry['PromptGuidedDecoder'](Prompt_guided_path)
     mobilesamv2 = sam_model_registry['vit_h']()
@@ -55,9 +55,9 @@ def batch_iterator(batch_size: int, *args) -> Generator[List[Any], None, None]:
     for b in range(n_batches):
         yield [arg[b * batch_size : (b + 1) * batch_size] for arg in args]
 
-encoder_path={'efficientvit_l2':'./weight/l2.pt',
-            'tiny_vit':'./weight/mobile_sam.pt',
-            'sam_vit_h':'./weight/sam_vit_h.pt',}
+encoder_path={'efficientvit_l2':'../weight/l2.pt',
+            'tiny_vit':'../weight/mobile_sam.pt',
+            'sam_vit_h':'../weight/sam_vit_h.pt',}
 
 def main(args):
     # import pdb;pdb.set_trace()
@@ -65,6 +65,7 @@ def main(args):
     mobilesamv2, ObjAwareModel=create_model()
     image_encoder=sam_model_registry[args.encoder_type](encoder_path[args.encoder_type])
     mobilesamv2.image_encoder=image_encoder
+    torch.onnx.export(image_encoder, torch.randn(1,3,1024,1024),"../weight/image_encoder_efficientvit_l2.onnx",input_names=["input"],output_names=["output"],opset_version=11, verbose=True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     mobilesamv2.to(device=device)
     mobilesamv2.eval()
@@ -79,7 +80,7 @@ def main(args):
         input_boxes1 = obj_results[0].boxes.xyxy
         input_boxes = input_boxes1.cpu().numpy()
         input_boxes = predictor.transform.apply_boxes(input_boxes, predictor.original_size)
-        input_boxes = torch.from_numpy(input_boxes).cuda()
+        input_boxes = torch.from_numpy(input_boxes).to(device)
         sam_mask=[]
         image_embedding=predictor.features
         image_embedding=torch.repeat_interleave(image_embedding, 320, dim=0)
