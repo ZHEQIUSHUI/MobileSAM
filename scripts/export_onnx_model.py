@@ -5,10 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 
 import torch
+import os
+os.sys.path.append('.')
 
 from mobile_sam import sam_model_registry
 from mobile_sam.utils.onnx import SamOnnxModel
-
+# from mobile_encoder.setup_mobile_sam import setup_model
 import argparse
 import warnings
 
@@ -106,6 +108,10 @@ def run_export(
 ):
     print("Loading model...")
     sam = sam_model_registry[model_type](checkpoint=checkpoint)
+    # sam = setup_model()
+    
+    checkpoint = torch.load(checkpoint,"cpu")
+    sam.load_state_dict(checkpoint,strict=True)
 
     onnx_model = SamOnnxModel(
         model=sam,
@@ -157,6 +163,8 @@ def run_export(
                 output_names=output_names,
                 dynamic_axes=dynamic_axes,
             )
+            print(f"Exporting onnx model to mobile_sam_encoder.onnx...")
+            torch.onnx.export(onnx_model.model.image_encoder,torch.ones([1,3,1024,1024]),"./mobile_sam_encoder.onnx",input_names=["input"],output_names=["output"],opset_version=11)
 
     if onnxruntime_exists:
         ort_inputs = {k: to_numpy(v) for k, v in dummy_inputs.items()}

@@ -3,3 +3,7 @@
 *.pyd
 __py
 **/__pycache__/
+weight
+segment_anything.egg-info
+*.jpg
+*.onnx
